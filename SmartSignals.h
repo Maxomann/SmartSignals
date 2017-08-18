@@ -150,6 +150,19 @@ namespace smartsignals
 			connectedElements.clear();
 		}
 
+		template< class ReturnValueHandler >
+		void call(ReturnValueHandler returnValueHandler, Args ... args)const
+		{
+			// copy elements to enable adding/removing elements in recursive calls
+			std::vector<std::function<RetVal(Args ...)>> toExecute;
+
+			for (const auto& el : connectedElements)
+				toExecute.push_back(el.second);
+
+			for (const auto& el : toExecute)
+				returnValueHandler(el(std::forward<Args>(args)...));
+		}
+
 		void call(Args ... args)const
 		{
 			// copy elements to enable adding/removing elements in recursive calls
@@ -159,7 +172,7 @@ namespace smartsignals
 				toExecute.push_back(el.second);
 
 			for (const auto& el : toExecute)
-				el( std::forward<Args>(args)... );
+				el(std::forward<Args>(args)...);
 		}
 
 		void operator() (Args ... args)
