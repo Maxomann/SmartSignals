@@ -2,7 +2,6 @@
 #include <functional>
 #include <memory>
 #include <vector>
-#include <list>
 #include <utility>
 #include <optional>
 #include <algorithm>
@@ -83,7 +82,7 @@ namespace smartsignals
 	private:
 		ConnectionId connectionIdCounter = 0;
 
-		std::list<std::pair<ConnectionId, std::function<RetVal(Args ...)>>> connectedElements;
+		std::vector<std::pair<ConnectionId, std::function<RetVal(Args ...)>>> connectedElements;
 
 	public:
 		ConnectionId connect(std::function<RetVal(Args ...)> function)
