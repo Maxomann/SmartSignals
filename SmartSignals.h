@@ -28,6 +28,52 @@ namespace smartsignals
 		}
 	};
 
+	class ConnectionReference
+	{
+		SignalBase& signalRef;
+		std::weak_ptr<bool> signalState;
+
+		const ConnectionId connectionId;
+
+	public:
+		ConnectionReference(SignalBase& signalRef, const ConnectionId connectionId)
+			: signalRef(signalRef),
+			signalState(signalRef.getStateTrackerPtr()),
+			connectionId(connectionId)
+		{
+
+		}
+
+		bool isValid()const
+		{
+			return (!signalState.expired() && signalRef.isConnectionIdValid(connectionId));
+		}
+
+		void disconnect()const
+		{
+			if (isValid())
+				signalRef.disconnect(connectionId);
+		}
+	};
+
+	class ConnectionTracker
+	{
+		std::vector<ConnectionReference> connections;
+
+	public:
+		void trackConnection(ConnectionReference ref)
+		{
+			connections.push_back(std::move(ref));
+		}
+
+		void disconnectAll()
+		{
+			for (const auto& el : connections)
+				el.disconnect();
+			connections.clear();
+		}
+	};
+
 	template< class T >
 	class Signal;
 
@@ -35,15 +81,15 @@ namespace smartsignals
 	class Signal<RetVal( Args... )> : public SignalBase
 	{
 	private:
-		ConnectionId connectionCounter = 0;
+		ConnectionId connectionIdCounter = 0;
 
 		std::list<std::pair<ConnectionId, std::function<RetVal(Args ...)>>> connectedElements;
 
 	public:
 		ConnectionId connect(std::function<RetVal(Args ...)> function)
 		{
-			ConnectionId connectionId = connectionCounter;
-			connectionCounter++;
+			ConnectionId connectionId = connectionIdCounter;
+			connectionIdCounter++;
 
 			connectedElements.push_back(
 				std::make_pair(
@@ -53,12 +99,27 @@ namespace smartsignals
 			);
 
 			return connectionId;
-		};
+		}
 
 		template < class T >
 		ConnectionId connect(T* obj, RetVal(T::* mem_fn_ptr)(Args...))
 		{
 			return connect([=](Args... args) -> RetVal { return (obj->*mem_fn_ptr)(args...); });
+		}
+
+		ConnectionId connect(ConnectionTracker& connectionTracker, std::function<RetVal(Args ...)> function)
+		{
+			const auto connectionId = connect(std::forward(function));
+			connectionTracker.trackConnection(ConnectionReference(*this, connectionId));
+			return connectionId;
+		}
+
+		template < class T >
+		ConnectionId connect(ConnectionTracker& connectionTracker, T* obj, RetVal(T::* mem_fn_ptr)(Args...))
+		{
+			const auto connectionId = connect(obj, mem_fn_ptr);
+			connectionTracker.trackConnection(ConnectionReference(*this, connectionId));
+			return connectionId;
 		}
 
 		void disconnect(const ConnectionId& connectionToRemove)
@@ -100,7 +161,7 @@ namespace smartsignals
 
 			for (const auto& el : toExecute)
 				el( std::forward<Args>(args)... );
-		};
+		}
 
 		void operator() (Args ... args)
 		{
@@ -108,58 +169,6 @@ namespace smartsignals
 		}
 	};
 
-	class ConnectionReference
-	{
-		SignalBase& signalRef;
-		std::weak_ptr<bool> signalState;
 
-		const ConnectionId connectionId;
-
-	public:
-		ConnectionReference(SignalBase& signalRef, const ConnectionId connectionId)
-			: signalRef(signalRef),
-			signalState(signalRef.getStateTrackerPtr()),
-			connectionId(connectionId)
-		{
-			
-		};
-
-		bool isValid()const
-		{
-			return ( !signalState.expired() && signalRef.isConnectionIdValid(connectionId) );
-		};
-
-		void disconnect()const
-		{
-			if (isValid())
-				signalRef.disconnect(connectionId);
-		};
-	};
-
-	class ConnectionTracker
-	{
-		std::vector<ConnectionReference> connections;
-
-	public:
-		template< class RetVal, class ... Args >
-		void connect( Signal<RetVal(Args...)>& signal, std::function<RetVal(Args ...)> function)
-		{
-			const auto connectionId = signal.connect(function);
-			connections.emplace_back(signal, connectionId);
-		};
-
-		template < class T, class RetVal, class ... Args >
-		void connect( Signal<RetVal(Args...)>& signal, T* obj, RetVal(T::* mem_fn_ptr)(Args...))
-		{
-			const auto connectionId = signal.connect(obj, mem_fn_ptr);
-			connections.emplace_back(signal, connectionId);
-		}
-
-		void disconnectAll()
-		{
-			for (const auto& el : connections)
-				el.disconnect();
-			connections.clear();
-		};
-	};
+	using Connections = ConnectionTracker;
 }

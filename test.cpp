@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "SmartSignals.h"
+#include "test.h"
 
 void testfunc(int a, int& b, const std::string& c, std::string d)
 {
@@ -22,6 +23,20 @@ int main()
 
 	signal.call(a, b, c, d);
 	signal(a, b, c, d);
+
+	std::cout << "Start Test2" << std::endl;
+
+	std::string teststring2 = "TestString2 ";
+
+	TestEmitter emitter;
+
+	TestUser user(emitter);
+
+	emitter.signal.call(teststring2, "Green");
+
+	user.connections.disconnectAll();
+
+	emitter.signal.call(teststring2, "Red");
 
 	system("pause");
 
