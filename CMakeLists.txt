@@ -6,7 +6,7 @@ add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/std:c++latest>)
 #add_executable(SmartSignalsTest test.cpp)
 
 install(FILES
-    include/SmartSignals.hpp
+    include/SmartSignals.h
   DESTINATION
     include/SmartSignals
 )
