@@ -5,7 +5,8 @@ add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/std:c++latest>)
 
 #add_executable(SmartSignalsTest test.cpp)
 
-add_library(SmartSignals INTERFACE)
-target_include_directories(SmartSignals INTERFACE ./include)
-install(TARGETS SmartSignals
-DESTINATION ./include)
+install(FILES
+    include/SmartSignals.hpp
+  DESTINATION
+    include/SmartSignals
+)
