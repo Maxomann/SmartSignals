@@ -9,8 +9,8 @@ add_library(SmartSignals INTERFACE)
 target_include_directories(SmartSignals INTERFACE include)
 
 install(
-DIRECTORY include
-DESTINATION include\\SmartSignals
+DIRECTORY include/
+DESTINATION include/SmartSignals
 )
 
 install(
